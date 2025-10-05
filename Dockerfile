@@ -18,7 +18,6 @@ RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 COPY --from=builder /app/sse-gateway .
-COPY db/migrations ./db/migrations
 
 EXPOSE 8003
 CMD ["./sse-gateway"]
