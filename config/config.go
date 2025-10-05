@@ -7,11 +7,12 @@ import (
 )
 
 type appConfig struct {
-	SecretJwt   string
-	RabbitmqUrl string
-	Port        string
-	Env         string
-	LogLevel    string
+	SecretJwt     string
+	RabbitmqUrl   string
+	AllowedOrigin string
+	Port          string
+	Env           string
+	LogLevel      string
 }
 
 var Config appConfig
@@ -27,10 +28,11 @@ func init() {
 	}
 
 	Config = appConfig{
-		SecretJwt:   viper.GetString("SECRET_JWT"),
-		Port:        viper.GetString("APP_PORT"),
-		Env:         viper.GetString("APP_ENV"),
-		LogLevel:    viper.GetString("APP_LOG_LEVEL"),
-		RabbitmqUrl: viper.GetString("RABBITMQ_URL"),
+		SecretJwt:     viper.GetString("SECRET_JWT"),
+		Port:          viper.GetString("APP_PORT"),
+		Env:           viper.GetString("APP_ENV"),
+		LogLevel:      viper.GetString("APP_LOG_LEVEL"),
+		RabbitmqUrl:   viper.GetString("RABBITMQ_URL"),
+		AllowedOrigin: viper.GetString("APP_ALLOW_ORIGINS"),
 	}
 }
