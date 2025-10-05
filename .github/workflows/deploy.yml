@@ -1,4 +1,4 @@
-name: Build & Deploy Master Data Service to VPS via GHCR
+name: Build & Deploy SSE Gateway to VPS via GHCR
 
 on:
   push:
