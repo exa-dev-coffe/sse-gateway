@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"eka-dev.com/sse-gateway/utils/response"
+	"eka-dev.cloud/sse-gateway/utils/response"
 	"github.com/gofiber/fiber/v2"
 )
 

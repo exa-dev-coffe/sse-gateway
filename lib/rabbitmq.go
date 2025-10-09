@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"eka-dev.com/sse-gateway/config"
+	"eka-dev.cloud/sse-gateway/config"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 

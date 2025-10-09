@@ -1,4 +1,4 @@
-module eka-dev.com/sse-gateway
+module eka-dev.cloud/sse-gateway
 
 go 1.24.5
 

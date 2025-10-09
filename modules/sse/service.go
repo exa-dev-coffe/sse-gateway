@@ -8,9 +8,9 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 
-	"eka-dev.com/sse-gateway/lib"
-	"eka-dev.com/sse-gateway/middleware"
-	"eka-dev.com/sse-gateway/utils/response"
+	"eka-dev.cloud/sse-gateway/lib"
+	"eka-dev.cloud/sse-gateway/middleware"
+	"eka-dev.cloud/sse-gateway/utils/response"
 	"github.com/gofiber/fiber/v2"
 	amqp "github.com/rabbitmq/amqp091-go"
 )

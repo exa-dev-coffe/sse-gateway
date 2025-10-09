@@ -1,9 +1,9 @@
 package sse
 
 import (
-	"eka-dev.com/sse-gateway/middleware"
-	"eka-dev.com/sse-gateway/utils/enum"
-	"eka-dev.com/sse-gateway/utils/response"
+	"eka-dev.cloud/sse-gateway/middleware"
+	"eka-dev.cloud/sse-gateway/utils/enum"
+	"eka-dev.cloud/sse-gateway/utils/response"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jmoiron/sqlx"
 )

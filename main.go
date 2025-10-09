@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"eka-dev.com/sse-gateway/config"
-	_ "eka-dev.com/sse-gateway/lib"
-	"eka-dev.com/sse-gateway/middleware"
-	"eka-dev.com/sse-gateway/modules/sse"
-	"eka-dev.com/sse-gateway/utils/response"
+	"eka-dev.cloud/sse-gateway/config"
+	_ "eka-dev.cloud/sse-gateway/lib"
+	"eka-dev.cloud/sse-gateway/middleware"
+	"eka-dev.cloud/sse-gateway/modules/sse"
+	"eka-dev.cloud/sse-gateway/utils/response"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
