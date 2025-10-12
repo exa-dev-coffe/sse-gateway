@@ -33,7 +33,7 @@ func initiator() {
 	}))
 
 	fiberApp.Use(logger.New(logger.Config{
-		Format:     "[${time}] ${ip} ${method} ${path} - ${status}\n",
+		Format:     "[${time}] ${ip} ${method} ${path} - ${status} (${latency})\n",
 		TimeFormat: "2006-01-02 15:04:05",
 		TimeZone:   "Asia/Jakarta",
 	}))
