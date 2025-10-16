@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -84,7 +85,7 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 		return response.InternalServerError("Failed to declare queue", nil)
 	}
 
-	err = ch.QueueBind(q.Name, "", "balance.history.updated", false, nil)
+	err = ch.QueueBind(q.Name, strconv.FormatInt(userId, 10), "balance.history.updated", false, nil)
 	if err != nil {
 		log.Error("Failed to bind queue:", err)
 		return response.InternalServerError("Failed to bind queue", nil)
@@ -126,17 +127,10 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 					log.Error("Message channel closed")
 					return
 				}
-				baseMessage, err := extractBaseBodyMessage(msg)
+				err = s.sendEventUpdateHistoryBalance(w, msg)
 				if err != nil {
-					log.Error("Failed to extract message:", err)
-					continue
-				}
-				if baseMessage.UserId == userId {
-					err = s.sendEventUpdateHistoryBalance(w, msg)
-					if err != nil {
-						log.Error("Failed to send event:", err)
-						return
-					}
+					log.Error("Failed to send event:", err)
+					return
 				}
 			case <-ticker.C:
 				err := s.heartbeat(w)
