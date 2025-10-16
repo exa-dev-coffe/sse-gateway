@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
+	"github.com/google/uuid"
 
 	"eka-dev.cloud/sse-gateway/lib"
 	"eka-dev.cloud/sse-gateway/middleware"
@@ -59,7 +60,7 @@ func (s *eventService) heartbeat(w *bufio.Writer) error {
 func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int64, ch *amqp.Channel) error {
 	err := ch.ExchangeDeclare(
 		"balance.history.updated", // name
-		"fanout",                  // type
+		"direct",                  // type
 		false,                     // durable
 		true,                      // auto-deleted
 		false,                     // internal
@@ -72,13 +73,15 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 		return response.InternalServerError("Failed to declare exchange", nil)
 	}
 
+	queueName := "balance_history_updated_user_" + strconv.FormatInt(userId, 10) + "_" + uuid.NewString()
+
 	q, err := ch.QueueDeclare(
-		"",    // name
-		false, // durable
-		true,  // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
+		queueName, // name
+		false,     // durable
+		true,      // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
 	)
 	if err != nil {
 		log.Error("Failed to declare queue:", err)
