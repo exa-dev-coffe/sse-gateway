@@ -60,7 +60,7 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 		"balance.history.updated", // name
 		"fanout",                  // type
 		false,                     // durable
-		false,                     // auto-deleted
+		true,                      // auto-deleted
 		false,                     // internal
 		false,                     // no-wait
 		nil,                       // arguments
@@ -73,9 +73,9 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 
 	q, err := ch.QueueDeclare(
 		"",    // name
-		true,  // durable
-		false, // delete when unused
-		true,  // exclusive
+		false, // durable
+		true,  // delete when unused
+		false, // exclusive
 		false, // no-wait
 		nil,   // arguments
 	)
@@ -87,7 +87,7 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 	err = ch.QueueBind(q.Name, "", "balance.history.updated", false, nil)
 	if err != nil {
 		log.Error("Failed to bind queue:", err)
-		return response.InternalServerError("Failed to bind queue", err)
+		return response.InternalServerError("Failed to bind queue", nil)
 	}
 
 	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
@@ -123,7 +123,7 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 			select {
 			case msg, ok := <-msgs:
 				if !ok {
-					log.Info("Message channel closed")
+					log.Error("Message channel closed")
 					return
 				}
 				baseMessage, err := extractBaseBodyMessage(msg)
@@ -134,12 +134,14 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 				if baseMessage.UserId == userId {
 					err = s.sendEventUpdateHistoryBalance(w, msg)
 					if err != nil {
+						log.Error("Failed to send event:", err)
 						return
 					}
 				}
 			case <-ticker.C:
 				err := s.heartbeat(w)
 				if err != nil {
+					log.Error("Failed to send heartbeat:", err)
 					return
 				}
 			case <-done:
@@ -159,7 +161,8 @@ func (s *eventService) Events(c *fiber.Ctx, claims *middleware.Claims, eventType
 
 	ch, err := lib.GetChannel()
 	if err != nil {
-		return response.InternalServerError("Failed to open channel", err)
+		log.Error("Failed to open channel:", err)
+		return response.InternalServerError("Failed to open channel", nil)
 	}
 
 	switch eventType {
@@ -168,6 +171,7 @@ func (s *eventService) Events(c *fiber.Ctx, claims *middleware.Claims, eventType
 	default:
 		err := ch.Close()
 		if err != nil {
+			log.Error("Failed to close channel:", err)
 			return err
 		}
 		return response.BadRequest("Invalid event type", nil)
@@ -179,7 +183,7 @@ func extractBaseBodyMessage(msg amqp.Delivery) (*BaseBodyMessage, error) {
 	err := json.Unmarshal(msg.Body, &message)
 	if err != nil {
 		log.Error("Failed to unmarshal message:", err)
-		return nil, response.InternalServerError("Internal Server Error", err)
+		return nil, response.InternalServerError("Internal Server Error", nil)
 	}
 	return &message, nil
 }
