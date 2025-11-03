@@ -35,6 +35,7 @@ jobs:
             docker stop sse-gateway-coffe || true && docker rm sse-gateway-coffe || true 
           
             docker run --env-file /home/deploy/env_project/coffe/sse_gateway/.env -d --name sse-gateway-coffe --network coffe-net -p 8003:8003 --memory="512m" --cpus="1.0" --restart=on-failure:5 ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:latest
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
             cd kube_config/coffe
             kubectl apply -f sse-gateway.yaml
           EOF
