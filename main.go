@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"eka-dev.cloud/sse-gateway/config"
+	"eka-dev.cloud/sse-gateway/lib"
 	_ "eka-dev.cloud/sse-gateway/lib"
 	"eka-dev.cloud/sse-gateway/middleware"
 	"eka-dev.cloud/sse-gateway/modules/sse"
@@ -39,7 +40,12 @@ func initiator() {
 	}))
 
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendString("OK")
+		_, err := lib.GetChannel()
+		if err != nil {
+			log.Println("RabbitMQ connection failed:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(response.InternalServerError("RabbitMQ connection error", nil))
+		}
+		return c.Status(fiber.StatusOK).JSON(response.Success("OK", nil))
 	})
 
 	// Initialize routes
