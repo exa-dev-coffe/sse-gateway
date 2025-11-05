@@ -45,3 +45,11 @@ func GetChannel() (*amqp.Channel, error) {
 	c := GetConnection()
 	return c.Channel()
 }
+
+func HealthCheck() error {
+	c := GetConnection()
+	if c.IsClosed() {
+		return amqp.ErrClosed
+	}
+	return nil
+}

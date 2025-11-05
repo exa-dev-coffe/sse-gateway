@@ -40,7 +40,7 @@ func initiator() {
 	}))
 
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
-		_, err := lib.GetChannel()
+		err := lib.HealthCheck()
 		if err != nil {
 			log.Println("RabbitMQ connection failed:", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(response.InternalServerError("RabbitMQ connection error", nil))
