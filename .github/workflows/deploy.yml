@@ -12,15 +12,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Get Commit SHA (short)
+        id: vars
+        run: echo "sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Log in to GHCR
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Build Docker image
+      - name: Build Image With SHA Tag
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:latest .
+          docker build -t ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }} .
 
-      - name: Push Docker image to GHCR
-        run: docker push ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:latest
+      - name: Push Image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }}
 
       - name: Deploy to VPS
         run: |
@@ -28,14 +33,14 @@ jobs:
           echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -p 31080 -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-          
-          ssh -p 31080 -i ~/.ssh/id_ed25519 deploy@${{ secrets.VPS_HOST }} << 'EOF'
-            docker login ghcr.io -u ${{ github.repository_owner }} -p '${{ secrets.GHCR_TOKEN }}'
-            docker pull ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:latest
-            docker stop sse-gateway-coffe || true && docker rm sse-gateway-coffe || true 
-          
-            docker run --env-file /home/deploy/env_project/coffe/sse_gateway/.env -d --name sse-gateway-coffe --network coffe-net -p 8003:8003 --memory="512m" --cpus="1.0" --restart=on-failure:5 ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:latest
+
+          ssh -p 31080 -i ~/.ssh/id_ed25519 deploy@${{ secrets.VPS_HOST }} << EOF
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-            cd kube_config/coffe
-            kubectl apply -f sse-gateway.yaml
+
+            # Patch the deployment to use the new SHA tag
+            kubectl set image deployment/sse-gateway-coffe \
+              sse-gateway-coffe=ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }}
+
+            # Optional: show rollout
+            kubectl rollout status deployment/sse-gateway-coffe
           EOF
