@@ -38,7 +38,7 @@ jobs:
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
             # Patch the deployment to use the new SHA tag
-            kubectl set image deployment/sse-gateway-coffe \
+            kubectl set image deployment/sse-gateway-coffe -n dev-coffe \
               sse-gateway-coffe=ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }}
 
             # Optional: show rollout
