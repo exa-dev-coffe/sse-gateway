@@ -42,5 +42,5 @@ jobs:
               sse-gateway-coffe=ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }}
 
             # Optional: show rollout
-            kubectl rollout status deployment/sse-gateway-coffe
+            kubectl rollout status deployment/sse-gateway-coffe -n dev-coffe
           EOF
