@@ -11,10 +11,12 @@ import (
 	"eka-dev.cloud/sse-gateway/utils/response"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 )
 
 func main() {
+	middleware.InitLogger("sse-gateway")
+	
 	// Load env
 	initiator()
 
@@ -33,11 +35,8 @@ func initiator() {
 		AllowCredentials: true,
 	}))
 
-	fiberApp.Use(logger.New(logger.Config{
-		Format:     "[${time}] ${ip} ${method} ${path} - ${status} (${latency})\n",
-		TimeFormat: "2006-01-02 15:04:05",
-		TimeZone:   "Asia/Jakarta",
-	}))
+	fiberApp.Use(requestid.New())
+	fiberApp.Use(middleware.RequestLogger())
 
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
 		err := lib.HealthCheck()
