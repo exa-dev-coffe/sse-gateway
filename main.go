@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"eka-dev.cloud/sse-gateway/config"
@@ -17,6 +18,11 @@ import (
 func main() {
 	middleware.InitLogger("sse-gateway")
 	
+	shutdown, err := lib.InitTracer("sse-gateway")
+	if err == nil && shutdown != nil {
+		defer shutdown(context.Background())
+	}
+
 	// Load env
 	initiator()
 
@@ -36,6 +42,7 @@ func initiator() {
 	}))
 
 	fiberApp.Use(requestid.New())
+	fiberApp.Use(middleware.TraceMiddleware())
 	fiberApp.Use(middleware.RequestLogger())
 
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
