@@ -4,6 +4,7 @@ type EventType string
 
 const (
 	EventUpdateHistoryBalance EventType = "update_history_balance"
+	EventOrder                EventType = "order"
 )
 
 func (e EventType) String() string {
@@ -12,4 +13,5 @@ func (e EventType) String() string {
 
 var eventTypeMap = map[string]EventType{
 	string(EventUpdateHistoryBalance): EventUpdateHistoryBalance,
+	string(EventOrder):                EventOrder,
 }

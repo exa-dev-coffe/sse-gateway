@@ -20,8 +20,10 @@ import (
 type Service interface {
 	Events(c *fiber.Ctx, claims *middleware.Claims, eventType EventType) error
 	sendEventUpdateHistoryBalance(w *bufio.Writer, msg amqp.Delivery) error
+	sendEventOrder(w *bufio.Writer, msg amqp.Delivery) error
 	heartbeat(w *bufio.Writer) error
 	handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int64, ch *amqp.Channel) error
+	handleEventOrder(c *fiber.Ctx, userId int64, ch *amqp.Channel) error
 }
 
 type eventService struct {
@@ -150,6 +152,111 @@ func (s *eventService) handleEventUpdateHistoryBalance(c *fiber.Ctx, userId int6
 	return nil
 }
 
+func (s *eventService) sendEventOrder(w *bufio.Writer, msg amqp.Delivery) error {
+	_, err := fmt.Fprintf(w, "data: %s\n\n", msg.Body)
+	if err != nil {
+		log.Error("Failed to write message:", err)
+		return err
+	}
+	if err := w.Flush(); err != nil {
+		log.Error("Failed to flush data:", err)
+		return err
+	}
+	return nil
+}
+
+func (s *eventService) handleEventOrder(c *fiber.Ctx, userId int64, ch *amqp.Channel) error {
+	err := ch.ExchangeDeclare(
+		"order.created", // name
+		"fanout",        // type
+		false,           // durable
+		true,            // auto-deleted
+		false,           // internal
+		false,           // no-wait
+		nil,             // arguments
+	)
+
+	if err != nil {
+		log.Error("Failed to declare exchange:", err)
+		return response.InternalServerError("Failed to declare exchange", nil)
+	}
+
+	queueName := "order_created_barista_" + strconv.FormatInt(userId, 10) + "_" + uuid.NewString()
+
+	q, err := ch.QueueDeclare(
+		queueName, // name
+		false,     // durable
+		true,      // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+	if err != nil {
+		log.Error("Failed to declare queue:", err)
+		return response.InternalServerError("Failed to declare queue", nil)
+	}
+
+	err = ch.QueueBind(q.Name, "", "order.created", false, nil)
+	if err != nil {
+		log.Error("Failed to bind queue:", err)
+		return response.InternalServerError("Failed to bind queue", nil)
+	}
+
+	msgs, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	if err != nil {
+		log.Error("Failed to register consumer:", err)
+		return response.InternalServerError("Failed to consume message", nil)
+	}
+
+	ctx := c.Context()
+
+	done := make(chan struct{})
+
+	go func() {
+		<-ctx.Done()
+		log.Info("Received done signal, shutting down")
+		close(done)
+	}()
+
+	c.Context().SetBodyStreamWriter(func(w *bufio.Writer) {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		defer func(ch *amqp.Channel) {
+			log.Info("Closing SSE connection for client")
+
+			err := ch.Close()
+			if err != nil {
+				log.Error("Failed to close channel:", err)
+			}
+		}(ch)
+
+		for {
+			select {
+			case msg, ok := <-msgs:
+				if !ok {
+					log.Error("Message channel closed")
+					return
+				}
+				err = s.sendEventOrder(w, msg)
+				if err != nil {
+					log.Error("Failed to send event:", err)
+					return
+				}
+			case <-ticker.C:
+				err := s.heartbeat(w)
+				if err != nil {
+					log.Error("Failed to send heartbeat:", err)
+					return
+				}
+			case <-done:
+				log.Info("Client disconnected")
+				return
+			}
+		}
+	})
+	return nil
+}
+
 func (s *eventService) Events(c *fiber.Ctx, claims *middleware.Claims, eventType EventType) error {
 	// Set headers for SSE
 	c.Set("Content-Type", "text/event-stream")
@@ -165,6 +272,8 @@ func (s *eventService) Events(c *fiber.Ctx, claims *middleware.Claims, eventType
 	switch eventType {
 	case EventUpdateHistoryBalance:
 		return s.handleEventUpdateHistoryBalance(c, claims.UserId, ch)
+	case EventOrder:
+		return s.handleEventOrder(c, claims.UserId, ch)
 	default:
 		err := ch.Close()
 		if err != nil {
