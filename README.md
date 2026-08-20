@@ -4,17 +4,17 @@ SSE Gateway is a real-time notification microservice built with **Go** and **Fib
 
 ## 🚀 Technologies
 
-*   **Language**: Go 1.25
-*   **Framework**: Fiber v2 (with SSE support)
-*   **Message Broker**: RabbitMQ (`amqp091-go`)
-*   **Observability**: OpenTelemetry
-*   **Logging**: `log/slog`
+- **Language**: Go 1.25
+- **Framework**: Fiber v2 (with SSE support)
+- **Message Broker**: RabbitMQ (`amqp091-go`)
+- **Observability**: OpenTelemetry
+- **Logging**: `log/slog`
 
 ## 📦 Features
 
-*   **Real-time Notifications**: Pushes events to web clients efficiently using SSE.
-*   **Event Subscription**: Consumes specific events from RabbitMQ and broadcasts them to connected users.
-*   **Lightweight**: Designed specifically for high-concurrency, long-lived connections.
+- **Real-time Notifications**: Pushes events to web clients efficiently using SSE.
+- **Event Subscription**: Consumes specific events from RabbitMQ and broadcasts them to connected users.
+- **Lightweight**: Designed specifically for high-concurrency, long-lived connections.
 
 ## ⚙️ Environment Variables
 
@@ -27,6 +27,7 @@ cp .env.example .env
 ## 🚀 How to Run
 
 1.  **Download Dependencies:**
+
     ```bash
     go mod download
     ```
@@ -35,3 +36,40 @@ cp .env.example .env
     ```bash
     go run main.go
     ```
+
+## 📦 Features
+
+- **Real-time Notifications**: Pushes events to web clients efficiently using SSE.
+- **Event Subscription**: Consumes specific events from RabbitMQ and broadcasts them to connected users.
+- **Lightweight**: Designed specifically for high-concurrency, long-lived connections.
+
+## ⚙️ Environment Variables
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+## 🚀 How to Run
+
+1.  **Download Dependencies:**
+
+    ```bash
+    go mod download
+    ```
+
+2.  **Run Locally:**
+    ```bash
+    go run main.go
+    ```
+
+## 🧪 Integration Testing
+
+Jalankan perintah berikut untuk mengeksekusi pengujian stream SSE dan health check:
+
+```bash
+go test -v .
+```
+
+_Persyaratan:_ Docker Desktop/Daemon harus aktif.
