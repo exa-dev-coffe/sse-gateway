@@ -24,6 +24,10 @@ func GetConnection() *amqp.Connection {
 		return conn
 	}
 
+	if config.Config.RabbitmqUrl == "" {
+		return nil
+	}
+
 	// retry loop kalau gagal
 	for {
 		c, err := amqp.Dial(config.Config.RabbitmqUrl)
@@ -43,6 +47,9 @@ func GetConnection() *amqp.Connection {
 // GetChannel -> bikin channel baru (safe untuk goroutine)
 func GetChannel() (*amqp.Channel, error) {
 	c := GetConnection()
+	if c == nil {
+		return nil, amqp.ErrClosed
+	}
 	return c.Channel()
 }
 

@@ -19,7 +19,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtKey = []byte(config.Config.SecretJwt)
+func getJwtKey() []byte {
+	if config.Config.SecretJwt != "" {
+		return []byte(config.Config.SecretJwt)
+	}
+	return []byte("super-secret-jwt-key")
+}
 
 func getTokenFromHeader(c *fiber.Ctx) string {
 	bearer := c.Get("Authorization")
@@ -41,7 +46,7 @@ func validateToken(c *fiber.Ctx) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, response.Unauthorized("Unexpected signing method", nil)
 		}
-		return jwtKey, nil
+		return getJwtKey(), nil
 	})
 
 	if err != nil {
@@ -75,7 +80,7 @@ func ValidateTokenQuery(c *fiber.Ctx) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, response.Unauthorized("Unexpected signing method", nil)
 		}
-		return jwtKey, nil
+		return getJwtKey(), nil
 	})
 
 	if err != nil {
