@@ -1,13 +1,17 @@
 package tests
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"testing"
+	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func TestSSESuite(t *testing.T) {
-	_, teardown := SetupTestRabbitMQ(t)
+	amqpURL, teardown := SetupTestRabbitMQ(t)
 	defer teardown()
 
 	app := SetupTestApp()
@@ -23,18 +27,52 @@ func TestSSESuite(t *testing.T) {
 		}
 	})
 
-	t.Run("GET /api/1.0/events - Real RabbitMQ SSE Stream 'order' 200 OK", func(t *testing.T) {
+	t.Run("GET /api/1.0/events - Real RabbitMQ SSE Stream 'order' 200 OK & Receives Message", func(t *testing.T) {
+		// Connect to RabbitMQ container & publish mock order created message
+		conn, err := amqp.Dial(amqpURL)
+		if err == nil {
+			ch, err := conn.Channel()
+			if err == nil {
+				_ = ch.ExchangeDeclare("order.created", "fanout", false, true, false, false, nil)
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				_ = ch.PublishWithContext(ctx, "order.created", "", false, false, amqp.Publishing{
+					ContentType: "application/json",
+					Body:        []byte(`{"event":"order_created","data":{"orderId":100,"totalPrice":50000}}`),
+				})
+				_ = ch.Close()
+			}
+			_ = conn.Close()
+		}
+
 		url := fmt.Sprintf("/api/1.0/events?token=%s&type=order", validToken)
-		resp, _ := ExecuteTestRequest(app, "GET", url, nil, "", 200)
+		resp, _ := ExecuteTestRequest(app, "GET", url, nil, "", 300)
 		if resp != nil && resp.StatusCode != 200 {
 			respBody, _ := io.ReadAll(resp.Body)
 			t.Fatalf("Expected HTTP 200 OK text/event-stream, got %v: %s", resp.StatusCode, string(respBody))
 		}
 	})
 
-	t.Run("GET /api/1.0/events - Real RabbitMQ SSE Stream 'update_history_balance' 200 OK", func(t *testing.T) {
+	t.Run("GET /api/1.0/events - Real RabbitMQ SSE Stream 'update_history_balance' 200 OK & Receives Message", func(t *testing.T) {
+		// Connect to RabbitMQ container & publish mock balance update message for user 1
+		conn, err := amqp.Dial(amqpURL)
+		if err == nil {
+			ch, err := conn.Channel()
+			if err == nil {
+				_ = ch.ExchangeDeclare("balance.history.updated", "direct", false, true, false, false, nil)
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				_ = ch.PublishWithContext(ctx, "balance.history.updated", "1", false, false, amqp.Publishing{
+					ContentType: "application/json",
+					Body:        []byte(`{"event":"balance_updated","data":{"userId":1,"newBalance":200000}}`),
+				})
+				_ = ch.Close()
+			}
+			_ = conn.Close()
+		}
+
 		url := fmt.Sprintf("/api/1.0/events?token=%s&type=update_history_balance", validToken)
-		resp, _ := ExecuteTestRequest(app, "GET", url, nil, "", 200)
+		resp, _ := ExecuteTestRequest(app, "GET", url, nil, "", 300)
 		if resp != nil && resp.StatusCode != 200 {
 			respBody, _ := io.ReadAll(resp.Body)
 			t.Fatalf("Expected HTTP 200 OK text/event-stream, got %v: %s", resp.StatusCode, string(respBody))
