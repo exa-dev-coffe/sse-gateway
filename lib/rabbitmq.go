@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -28,16 +28,16 @@ func GetConnection() *amqp.Connection {
 		return nil
 	}
 
-	// retry loop kalau gagal
+	// retry loop if failed
 	for {
 		c, err := amqp.Dial(config.Config.RabbitmqUrl)
 		if err != nil {
-			log.Println("❌ Failed to connect to RabbitMQ, retrying in 5s:", err)
+			slog.Error("Failed to connect to RabbitMQ, retrying in 5s", "error", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		conn = c
-		log.Println("✅ Connected to RabbitMQ")
+		slog.Info("Connected to RabbitMQ")
 		break
 	}
 

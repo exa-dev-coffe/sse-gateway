@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"log/slog"
 	"os"
 	"time"
@@ -15,6 +16,12 @@ func InitLogger(serviceName string) {
 		Level: slog.LevelInfo,
 	})).With("app_name", serviceName)
 	slog.SetDefault(logger)
+	log.SetFlags(0)
+	log.SetOutput(slog.NewLogLogger(logger.Handler(), slog.LevelInfo).Writer())
+}
+
+func init() {
+	InitLogger("sse-gateway")
 }
 
 // RequestLogger middleware logs HTTP requests using slog with request_id

@@ -72,4 +72,4 @@ Jalankan perintah berikut untuk mengeksekusi pengujian stream SSE dan health che
 go test -v .
 ```
 
-_Persyaratan:_ Docker Desktop/Daemon harus aktif.
+_Requirement:_ Docker Desktop/Daemon must be running.
