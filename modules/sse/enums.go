@@ -3,8 +3,9 @@ package sse
 type EventType string
 
 const (
-	EventUpdateHistoryBalance EventType = "update_history_balance"
-	EventOrder                EventType = "order"
+	EventUpdateHistoryBalance  EventType = "update_history_balance"
+	EventOrder                 EventType = "order"
+	EventRolePermissionUpdated EventType = "role_permission_updated"
 )
 
 func (e EventType) String() string {
@@ -12,6 +13,7 @@ func (e EventType) String() string {
 }
 
 var eventTypeMap = map[string]EventType{
-	string(EventUpdateHistoryBalance): EventUpdateHistoryBalance,
-	string(EventOrder):                EventOrder,
+	string(EventUpdateHistoryBalance):  EventUpdateHistoryBalance,
+	string(EventOrder):                 EventOrder,
+	string(EventRolePermissionUpdated): EventRolePermissionUpdated,
 }

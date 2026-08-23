@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,7 +50,8 @@ func SetupTestRabbitMQ(t *testing.T) (string, func()) {
 
 func SetupTestApp() *fiber.App {
 	app := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler,
+		ErrorHandler:   middleware.ErrorHandler,
+		ReadBufferSize: 16 * 1024,
 	})
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -72,10 +74,18 @@ func GenerateTestJWT(userId int64, role string) string {
 		secret = "super-secret-jwt-key"
 		config.Config.SecretJwt = secret
 	}
+	roleId := 2
+	if strings.EqualFold(role, "admin") {
+		roleId = 1
+	} else if strings.EqualFold(role, "barista") {
+		roleId = 3
+	}
+
 	claims := middleware.Claims{
 		UserId: userId,
 		Type:   "ACCESS",
 		Role:   role,
+		RoleId: roleId,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

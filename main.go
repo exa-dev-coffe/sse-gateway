@@ -32,7 +32,9 @@ func main() {
 func initiator() {
 	// Initialize the fiber app
 	fiberApp := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler,
+		ErrorHandler:    middleware.ErrorHandler,
+		ReadBufferSize:  16 * 1024,
+		WriteBufferSize: 16 * 1024,
 	})
 
 	fiberApp.Use(cors.New(cors.Config{

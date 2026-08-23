@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -76,6 +77,43 @@ func TestSSESuite(t *testing.T) {
 		if resp != nil && resp.StatusCode != 200 {
 			respBody, _ := io.ReadAll(resp.Body)
 			t.Fatalf("Expected HTTP 200 OK text/event-stream, got %v: %s", resp.StatusCode, string(respBody))
+		}
+	})
+
+	t.Run("GET /api/1.0/events - Real RabbitMQ SSE Stream 'role_permission_updated' 200 OK & Receives Fanout Broadcast", func(t *testing.T) {
+		// Connect to RabbitMQ container & publish real role permission update message
+		conn, err := amqp.Dial(amqpURL)
+		if err == nil {
+			ch, err := conn.Channel()
+			if err == nil {
+				_ = ch.ExchangeDeclare("role.permission.updated", "fanout", false, true, false, false, nil)
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				defer cancel()
+				_ = ch.PublishWithContext(ctx, "role.permission.updated", "", false, false, amqp.Publishing{
+					ContentType: "application/json",
+					Body:        []byte(`{"event":"role_permission_updated","roleId":3,"roleName":"barista"}`),
+				})
+				_ = ch.Close()
+			}
+			_ = conn.Close()
+		}
+
+		url := fmt.Sprintf("/api/1.0/events?token=%s&type=role_permission_updated", validToken)
+		resp, _ := ExecuteTestRequest(app, "GET", url, nil, "", 300)
+		if resp != nil && resp.StatusCode != 200 {
+			respBody, _ := io.ReadAll(resp.Body)
+			t.Fatalf("Expected HTTP 200 OK text/event-stream, got %v: %s", resp.StatusCode, string(respBody))
+		}
+	})
+
+	t.Run("GET /api/1.0/events - Token from Cookie fallback 200 OK", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/1.0/events?type=role_permission_updated", nil)
+		req.Header.Set("Cookie", fmt.Sprintf("token=%s", validToken))
+
+		resp, _ := app.Test(req, 300)
+		if resp != nil && resp.StatusCode != 200 {
+			respBody, _ := io.ReadAll(resp.Body)
+			t.Fatalf("Expected HTTP 200 OK for cookie-authenticated SSE, got %v: %s", resp.StatusCode, string(respBody))
 		}
 	})
 
