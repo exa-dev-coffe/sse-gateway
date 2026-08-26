@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
+	"os"
 
 	"eka-dev.cloud/sse-gateway/config"
 	"eka-dev.cloud/sse-gateway/lib"
@@ -31,7 +32,9 @@ func main() {
 func initiator() {
 	// Initialize the fiber app
 	fiberApp := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler,
+		ErrorHandler:    middleware.ErrorHandler,
+		ReadBufferSize:  16 * 1024,
+		WriteBufferSize: 16 * 1024,
 	})
 
 	fiberApp.Use(cors.New(cors.Config{
@@ -48,7 +51,7 @@ func initiator() {
 	fiberApp.Get("/health", func(c *fiber.Ctx) error {
 		err := lib.HealthCheck()
 		if err != nil {
-			log.Println("RabbitMQ connection failed:", err)
+			slog.Error("RabbitMQ connection failed", "error", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(response.InternalServerError("RabbitMQ connection error", nil))
 		}
 		return c.Status(fiber.StatusOK).JSON(response.Success("OK", nil))
@@ -64,7 +67,7 @@ func initiator() {
 
 	err := fiberApp.Listen(config.Config.Port)
 	if err != nil {
-		log.Fatalln("Failed to start server:", err)
-		return
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
 	}
 }

@@ -1,7 +1,7 @@
 package lib
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -24,16 +24,20 @@ func GetConnection() *amqp.Connection {
 		return conn
 	}
 
-	// retry loop kalau gagal
+	if config.Config.RabbitmqUrl == "" {
+		return nil
+	}
+
+	// retry loop if failed
 	for {
 		c, err := amqp.Dial(config.Config.RabbitmqUrl)
 		if err != nil {
-			log.Println("❌ Failed to connect to RabbitMQ, retrying in 5s:", err)
+			slog.Error("Failed to connect to RabbitMQ, retrying in 5s", "error", err)
 			time.Sleep(5 * time.Second)
 			continue
 		}
 		conn = c
-		log.Println("✅ Connected to RabbitMQ")
+		slog.Info("Connected to RabbitMQ")
 		break
 	}
 
@@ -43,6 +47,9 @@ func GetConnection() *amqp.Connection {
 // GetChannel -> bikin channel baru (safe untuk goroutine)
 func GetChannel() (*amqp.Channel, error) {
 	c := GetConnection()
+	if c == nil {
+		return nil, amqp.ErrClosed
+	}
 	return c.Channel()
 }
 

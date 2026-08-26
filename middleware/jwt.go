@@ -10,24 +10,40 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type PermissionAction struct {
+	View   bool `json:"view"`
+	Create bool `json:"create"`
+	Edit   bool `json:"edit"`
+	Delete bool `json:"delete"`
+}
+
 type Claims struct {
-	FullName string `json:"FullName"`
-	Email    string `json:"Email"`
-	UserId   int64  `json:"UserId"`
-	Type     string `json:"Type"`
-	Role     string `json:"Role"`
+	FullName    string                      `json:"FullName"`
+	Email       string                      `json:"Email"`
+	UserId      int64                       `json:"UserId"`
+	Type        string                      `json:"Type"`
+	Role        string                      `json:"Role"`
+	RoleId      int                         `json:"RoleId"`
+	Permissions map[string]PermissionAction `json:"Permissions"`
 	jwt.RegisteredClaims
 }
 
-var jwtKey = []byte(config.Config.SecretJwt)
+func getJwtKey() []byte {
+	if config.Config.SecretJwt != "" {
+		return []byte(config.Config.SecretJwt)
+	}
+	return []byte("super-secret-jwt-key")
+}
 
 func getTokenFromHeader(c *fiber.Ctx) string {
 	bearer := c.Get("Authorization")
 	if bearer == "" {
 		return ""
 	}
-	token := bearer[len("Bearer "):]
-	return token
+	if strings.HasPrefix(bearer, "Bearer ") {
+		return bearer[len("Bearer "):]
+	}
+	return bearer
 }
 
 func validateToken(c *fiber.Ctx) (*Claims, error) {
@@ -41,15 +57,13 @@ func validateToken(c *fiber.Ctx) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, response.Unauthorized("Unexpected signing method", nil)
 		}
-		return jwtKey, nil
+		return getJwtKey(), nil
 	})
 
 	if err != nil {
-		// cek apakah error karena expired
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, response.Unauthorized("Token expired", nil)
 		}
-		// cek error lain
 		return nil, response.Unauthorized("Invalid token", nil)
 	}
 
@@ -67,6 +81,12 @@ func validateToken(c *fiber.Ctx) (*Claims, error) {
 func ValidateTokenQuery(c *fiber.Ctx) (*Claims, error) {
 	tokenString := c.Query("token")
 	if tokenString == "" {
+		tokenString = c.Cookies("token")
+	}
+	if tokenString == "" {
+		tokenString = getTokenFromHeader(c)
+	}
+	if tokenString == "" {
 		return nil, response.Unauthorized("Missing Token", nil)
 	}
 
@@ -75,15 +95,13 @@ func ValidateTokenQuery(c *fiber.Ctx) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, response.Unauthorized("Unexpected signing method", nil)
 		}
-		return jwtKey, nil
+		return getJwtKey(), nil
 	})
 
 	if err != nil {
-		// cek apakah error karena expired
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, response.Unauthorized("Token expired", nil)
 		}
-		// cek error lain
 		return nil, response.Unauthorized("Invalid token", nil)
 	}
 
@@ -124,7 +142,7 @@ func RequireRole(roles ...string) fiber.Handler {
 
 		userRole := claims.Role
 		for _, role := range roles {
-			if userRole == role {
+			if strings.EqualFold(userRole, role) {
 				c.Locals("user", claims)
 				return c.Next()
 			}
