@@ -110,9 +110,9 @@ jobs:
             export KUBECONFIG=/home/deploy/.kube/config
 
             # Patch the deployment to use the new SHA tag
-            kubectl set image deployment/sse-gateway-coffe -n dev-coffe \
+            kubectl set image deployment/sse-gateway-coffe -n coffe \
               sse-gateway-coffe=ghcr.io/${{ github.repository_owner }}/sse-gateway-coffe:${{ steps.vars.outputs.sha }}
 
             # Optional: show rollout
-            kubectl rollout status deployment/sse-gateway-coffe -n dev-coffe
+            kubectl rollout status deployment/sse-gateway-coffe -n coffe
           EOF
